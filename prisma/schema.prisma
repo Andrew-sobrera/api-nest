@@ -1,0 +1,61 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Order {
+  id                   String      @id @default(uuid())
+  orderNumber          String      @unique @map("order_number")
+  expectedDeliveryDate DateTime    @map("expected_delivery_date")
+  customerName         String      @map("customer_name")
+  customerDocument     String      @map("customer_document")
+  deliveryAddress      String      @map("delivery_address")
+  status               OrderStatus @default(PENDING)
+  createdAt            DateTime    @default(now()) @map("created_at")
+  updatedAt            DateTime    @updatedAt @map("updated_at")
+  deletedAt            DateTime?   @map("deleted_at")
+
+  items OrderItem[]
+
+  @@index([status])
+  @@index([expectedDeliveryDate])
+  @@index([deletedAt])
+  @@index([orderNumber])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String  @id @default(uuid())
+  description String
+  price       Decimal @db.Decimal(10, 2)
+  orderId     String  @map("order_id")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_items")
+}
